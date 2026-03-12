@@ -8,7 +8,7 @@
 // Replace these values with your Firebase project details
 // ============================================
 const firebaseConfig = {
-    apiKey: "AIzaSyDBiTNOeie-Tz2Rn37vXGJFYavqX2T6o3M",
+    apiKey: "AIzaSyDBiTNOeie-Tz2Rn37vXGJFYavqX2T6o3",
     authDomain: "tidyai-4ad87.firebaseapp.com",
     projectId: "tidyai-4ad87",
     storageBucket: "tidyai-4ad87.firebasestorage.app",
@@ -20,21 +20,40 @@ const firebaseConfig = {
 // Waitlist collection name
 const WAITLIST_COLLECTION = 'waitlist';
 
-// ============================================
-// Initialize Firebase
-// ============================================
-let db;
+// Firebase app instance
+let app = null;
+let db = null;
 
+/**
+ * Initialize Firebase app
+ */
 async function initFirebase() {
-    if (typeof firebase !== 'undefined' && !db) {
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            console.log('Firebase initialized');
-        } catch (error) {
-            console.error('Firebase initialization error:', error);
-        }
+    if (!app) {
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js");
+        app = initializeApp(firebaseConfig);
     }
+    return app;
+}
+
+/**
+ * Get Firestore instance
+ */
+async function getDb() {
+    if (!db) {
+        const { getFirestore } = await import("https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js");
+        db = getFirestore(await initFirebase());
+    }
+    return db;
+}
+
+/**
+ * Validate email format
+ * @param {string} email 
+ * @returns {boolean}
+ */
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 /**
@@ -52,47 +71,29 @@ async function submitToWaitlist(email) {
     }
 
     try {
-        // Initialize Firebase if not already done
-        await initFirebase();
+        // Get Firestore instance
+        const firestore = await getDb();
+        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js");
 
-        if (db) {
-            // Use Firebase Firestore
-            await db.collection(WAITLIST_COLLECTION).add({
-                email: email,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                status: 'pending'
-            });
+        // Add to waitlist collection
+        await addDoc(collection(firestore, WAITLIST_COLLECTION), {
+            email: email,
+            joinedAt: new Date().toISOString()
+        });
 
-            return {
-                success: true,
-                message: 'Welcome to the waitlist!'
-            };
-        } else {
-            // Fallback: simulate successful submission (remove when Firebase is configured)
-            console.log('Waitlist submission (simulated):', email);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return {
-                success: true,
-                message: 'Welcome to the waitlist!'
-            };
-        }
+        console.log("Email saved to waitlist!");
+        return {
+            success: true,
+            message: 'Welcome to the waitlist!'
+        };
+
     } catch (error) {
-        console.error('Waitlist error:', error);
+        console.error('Error saving email:', error);
         return {
             success: false,
             message: 'Something went wrong. Please try again.'
         };
     }
-}
-
-/**
- * Validate email format
- * @param {string} email 
- * @returns {boolean}
- */
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
 }
 
 /**
