@@ -1,6 +1,6 @@
 /**
  * TIDYAI - Firebase Waitlist Integration
- * Add your Firebase configuration below
+ * Uses Firebase CDN for static site deployment
  */
 
 // ============================================
@@ -8,27 +8,34 @@
 // Replace these values with your Firebase project details
 // ============================================
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    databaseURL: "https://YOUR_PROJECT.firebaseio.com"
+    apiKey: "AIzaSyDBiTNOeie-Tz2Rn37vXGJFYavqX2T6o3M",
+    authDomain: "tidyai-4ad87.firebaseapp.com",
+    projectId: "tidyai-4ad87",
+    storageBucket: "tidyai-4ad87.firebasestorage.app",
+    messagingSenderId: "92533733060",
+    appId: "1:92533733060:android:968e5180ae7eb13a307b91",
+    databaseURL: "https://tidyai-4ad87.firebaseio.com"
 };
 
 // Waitlist collection name
 const WAITLIST_COLLECTION = 'waitlist';
 
 // ============================================
-// Initialize Firebase (uncomment when configured)
+// Initialize Firebase
 // ============================================
+let db;
 
-// import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.x/firebase-app.js';
-// import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.x/firebase-firestore.js';
-
-// const app = initializeApp(firebaseConfig);
-// const db = getFirestore(app);
+async function initFirebase() {
+    if (typeof firebase !== 'undefined' && !db) {
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            console.log('Firebase initialized');
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+        }
+    }
+}
 
 /**
  * Submit email to waitlist
@@ -45,34 +52,30 @@ async function submitToWaitlist(email) {
     }
 
     try {
-        // Using Firebase Firestore
-        // Uncomment when Firebase is configured
+        // Initialize Firebase if not already done
+        await initFirebase();
 
-        /*
-        const docRef = await addDoc(collection(db, WAITLIST_COLLECTION), {
-          email: email,
-          createdAt: serverTimestamp(),
-          status: 'pending'
-        });
-        
-        return {
-          success: true,
-          message: 'Welcome to the waitlist!'
-        };
-        */
+        if (db) {
+            // Use Firebase Firestore
+            await db.collection(WAITLIST_COLLECTION).add({
+                email: email,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'pending'
+            });
 
-        // For demo purposes - simulate successful submission
-        // Remove this when Firebase is configured
-        console.log('Waitlist submission:', email);
-
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        return {
-            success: true,
-            message: 'Welcome to the waitlist!'
-        };
-
+            return {
+                success: true,
+                message: 'Welcome to the waitlist!'
+            };
+        } else {
+            // Fallback: simulate successful submission (remove when Firebase is configured)
+            console.log('Waitlist submission (simulated):', email);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return {
+                success: true,
+                message: 'Welcome to the waitlist!'
+            };
+        }
     } catch (error) {
         console.error('Waitlist error:', error);
         return {
